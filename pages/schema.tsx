@@ -35,17 +35,24 @@ const fetchData = async (token: string) =>
   }).then((res) => res.json());
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  /** This requires the Clerk withClerkMiddleware see middleware.ts */
-  const { getToken } = getAuth(ctx.req);
-  const token = await getToken({
-    template: "grafbase",
-  });
-  if (!token) {
-    console.warn("No token found", token);
+  let response = { data: {}, errors: {} };
+  try {
+    /** This requires the Clerk withClerkMiddleware see middleware.ts */
+    const { getToken } = getAuth(ctx.req);
+    const token = await getToken({
+      template: "grafbase",
+    });
+    if (!token) {
+      console.warn("No token found", token);
+    }
+
+    response = token
+      ? await fetchData(token)
+      : { data: {}, errors: { message: "No token" } };
+  } catch (e) {
+    console.error(e);
+    response.errors = { message: "Error fetching data" };
   }
-
-  const response = token ? await fetchData(token) : { data: {}, errors: {} };
-
   return {
     props: {
       ...buildClerkProps(ctx.req),
@@ -65,7 +72,7 @@ const SchemaPage = ({ initialData }: SchemaPageProps) => {
       template: "grafbase",
     });
     if (!token) {
-      console.warn("No token found", token);
+      setData({ data, errors: { message: "No token found" } });
       return;
     }
     await fetchData(token).then(({ data, errors }) =>
