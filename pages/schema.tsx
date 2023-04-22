@@ -44,12 +44,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     console.warn("No token found", token);
   }
 
-  const response = token ? await fetchData(token) : { data: {} };
+  const response = token ? await fetchData(token) : { data: {}, errors: {} };
 
   return {
     props: {
       ...buildClerkProps(ctx.req),
-      initialData: response.data,
+      initialData: response,
     },
   };
 };
@@ -57,7 +57,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 type SchemaPageProps = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 const SchemaPage = ({ initialData }: SchemaPageProps) => {
-  const [data, setData] = useState();
+  const [data, setData] = useState<{ data: unknown; errors: unknown }>();
   const { getToken } = useAuth();
 
   const getData = async () => {
@@ -68,16 +68,18 @@ const SchemaPage = ({ initialData }: SchemaPageProps) => {
       console.warn("No token found", token);
       return;
     }
-    await fetchData(token).then(({ data }) => setData(data));
+    await fetchData(token).then(({ data, errors }) =>
+      setData({ data, errors })
+    );
   };
 
   return (
     <div>
       <h2>Server Side</h2>
-      <pre>{JSON.stringify({ data: initialData }, null, 2)}</pre>
+      <pre>{JSON.stringify({ ...initialData }, null, 2)}</pre>
       <button onClick={getData}>Fetch data</button>
       <h2>Client Side</h2>
-      <pre>{JSON.stringify({ data }, null, 2)}</pre>
+      <pre>{JSON.stringify({ ...data }, null, 2)}</pre>
     </div>
   );
 };
